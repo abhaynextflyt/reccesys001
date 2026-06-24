@@ -54,5 +54,36 @@ the camera hardware appears dead after repeated capture failures.</p>
   <li><strong>Browser:</strong> <span class="file">collectivefeed/page.js</span> consumes those messages and renders a live multi-camera dashboard.</li>
 </ul>
 
+<h2>How to Run</h2>
+
+<h3>1. Relay Server</h3>
+<p>From <code>reccesys001/backend/version01/</code>:</p>
+<pre><code>npm install ws
+node server.js</code></pre>
+<p>Env vars (optional): <code>PORT</code> (default 8080), <code>PI_PATH_PREFIX</code> (default <code>/ws/pi/</code>), <code>FEED_PATH</code> (default <code>/ws/feed</code>).
+Health check: <code>http://localhost:8080/health</code></p>
+
+<h3>2. Frontend (Collective Feed)</h3>
+<p>From <code>reccesys001/frontend/version01/</code>:</p>
+<pre><code>npm install
+npm run dev</code></pre>
+<p>Open <code>http://localhost:3000/collectivefeed</code>. Set <code>NEXT_PUBLIC_WS_URL</code> in
+<code>.env.local</code> if the relay isn't at <code>ws://localhost:8080/ws/feed</code>.</p>
+
+<h3>3. USB Camera Uploader</h3>
+<p>From <code>reccesys001/scripts/</code> (on the device with the USB camera, Linux/V4L2):</p>
+<pre><code>pip install -r requirements.txt
+PI_ID=pi-01 INGEST_URL=ws://localhost:8080 python usb_camera_uploader.py</code></pre>
+<p>Key env vars: <code>PI_ID</code> (default <code>pi-default</code>), <code>INGEST_URL</code> (default
+<code>wss://ingest.example.com/stream</code> — point this at your relay server), <code>USB_CAMERA_INDEX</code>
+(default <code>0</code>).</p>
+
+<h3>Run Order</h3>
+<ol>
+  <li>Start the relay server.</li>
+  <li>Start the frontend dev server and open the collective feed page.</li>
+  <li>Start one or more camera uploaders pointed at the relay — feeds appear live on the page.</li>
+</ol>
+
 </body>
 </html>
