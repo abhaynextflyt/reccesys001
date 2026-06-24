@@ -1,4 +1,4 @@
-"""USB Camera WebSocket Streamer.
+"""USB Camera WebSocket Streamer Version 0.1.
 
 Implements Modules 1-4 from the Low-Level Design document v2.1.0-usb.
 
