@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Minimal Viable 0.1 — System Overview</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #1a1a1a; }
+  h1 { border-bottom: 2px solid #ddd; padding-bottom: 8px; }
+  h2 { margin-top: 32px; color: #0b5; }
+  code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; }
+  .file { font-weight: 600; color: #555; }
+  ul { margin: 8px 0; }
+</style>
+</head>
+<body>
+
+<h1>Minimal Viable 0.1 — System Overview</h1>
+<p>A bare-bones live camera streaming pipeline: a Python uploader on the device,
+a Node.js relay server in the middle, and a Next.js page to view the feeds.</p>
+
+<h2>1. Relay Server</h2>
+<p class="file">reccesys001/backend/version01/server.js</p>
+<p>Node.js WebSocket relay sitting between cameras and browsers. It accepts two kinds
+of connections: Pi/camera clients on <code>/ws/pi/&lt;pi_id&gt;</code> and frontend
+viewers on <code>/ws/feed</code>. Each camera registers itself, then streams binary
+JPEG frames (with a small JSON header) and periodic health/telemetry reports. The
+server keeps a map of connected cameras and a set of connected frontends, and simply
+broadcasts every frame and telemetry update from cameras to all frontends. Also
+exposes a <code>/health</code> HTTP endpoint listing connected cameras and clients.</p>
+
+<h2>2. Collective Feed Page</h2>
+<p class="file">reccesys001/frontend/version01/src/app/collectivefeed/page.js</p>
+<p>Next.js client page that connects to the relay's <code>/ws/feed</code> endpoint
+and renders a live grid of camera cards. For each camera it shows the latest JPEG
+frame (base64-decoded), connection status, and a telemetry panel (CPU temp, CPU load,
+memory, Wi-Fi signal) plus stats like frame number, FPS, resolution, firmware version,
+frames sent, and data sent. Auto-reconnects every 3 seconds if the WebSocket drops.</p>
+
+<h2>3. USB Camera Uploader</h2>
+<p class="file">reccesys001/scripts/usb_camera_uploader.py</p>
+<p>Python script that runs on the camera device. Opens a USB camera via OpenCV
+(V4L2 backend, falling back to ANY), captures frames asynchronously, encodes them
+as JPEG via Pillow, and streams them over a persistent WebSocket connection to the
+relay server. Sends a registration handshake on connect, paces frames to the
+configured FPS using anchor-based timing, and reports system telemetry (CPU temp,
+CPU/memory load, Wi-Fi signal strength) every 60 seconds. Reconnects with
+exponential backoff on network failure, and crashes (for systemd to restart) if
+the camera hardware appears dead after repeated capture failures.</p>
+
+<h2>Data Flow</h2>
+<ul>
+  <li><strong>Camera → Relay:</strong> <span class="file">usb_camera_uploader.py</span> connects to <code>wss://&lt;relay&gt;/ws/pi/&lt;pi_id&gt;</code>, sends registration, then a stream of <code>frame</code> and <code>health</code> messages.</li>
+  <li><strong>Relay → Browser:</strong> <span class="file">server.js</span> rebroadcasts <code>pi_connected</code>, <code>pi_disconnected</code>, <code>frame</code>, and <code>telemetry</code> messages to every connected frontend over <code>/ws/feed</code>.</li>
+  <li><strong>Browser:</strong> <span class="file">collectivefeed/page.js</span> consumes those messages and renders a live multi-camera dashboard.</li>
+</ul>
+
+</body>
+</html>
