@@ -293,7 +293,7 @@ def get_cpu_percent() -> float:
     if psutil is None:
         return 0.0
     try:
-        return float(psutil.cpu_percent(interval=1))
+        return float(psutil.cpu_percent(interval=None))
     except Exception as exc:  # noqa: BLE001 - psutil raises diverse errors
         logger.debug("get_cpu_percent() failed: %s", exc)
         return 0.0
